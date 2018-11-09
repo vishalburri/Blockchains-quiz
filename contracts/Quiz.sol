@@ -7,9 +7,9 @@ contract Quiz
 
     address player1;
     address player2;
-    uint joinFee;
+    uint public joinFee;
     uint playerTurn;
-    uint winner;
+    uint public winner;
     uint numPlayers;
     bool isStart;
     uint[][] winnerStates = [[0,1,2],[3,4,5],[6,7,8],
@@ -27,15 +27,13 @@ contract Quiz
     modifier checkPlayer(){
         if ((playerTurn == 1 && msg.sender == player1) || (playerTurn == 2 && msg.sender == player2))
         _;
-        else
-            throw;
+        
     }
 
     modifier onlyOwner(){
         if (msg.sender==owner)
         _;
-        else
-            throw;
+        
     }
     
 
@@ -43,15 +41,13 @@ contract Quiz
 
         require (numPlayers<=2,"Exceeded number");
         require (msg.value >=joinFee);
-        
+        numPlayers++;        
         if(player1==address(0)){
             player1 = msg.sender;
-            numPlayers++;
             return;
         }
         if(player2==address(0)){
             player2 = msg.sender;
-            numPlayers++;
             return;
         }
         
@@ -88,7 +84,7 @@ contract Quiz
         isStart=false;
     }
 
-    function getWinner () private returns(uint res)  {
+    function getWinner () private view returns(uint res)  {
         
         for(uint i=0;i<8;i++){
             uint[] memory curstate = winnerStates[i];
