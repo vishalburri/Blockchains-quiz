@@ -2,7 +2,7 @@ pragma solidity ^0.4.24;
 
 contract Quiz
 {
-    uint8[] gameBoard = new uint[](9);
+    uint[] gameBoard = new uint[](9);
     address owner;
 
     address player1;
@@ -39,7 +39,7 @@ contract Quiz
         }
     }
 
-    function startGame()  {
+    function startGame()   {
         require (numPlayers==2);
         require (owner==msg.sender);
 
@@ -52,19 +52,31 @@ contract Quiz
         require (move >0 && move <=9,"Invalid move");
         require (gameBoard[move-1]==0,"Invalid Move");
 
-        gameBoard[move-1] = move;
+        gameBoard[move-1] = playerTurn;
         winner = getWinner();
         if(winner > 0){
             endGame();
         }
         changePlayer();
     }
+    
+    function endGame() private {
+        playerTurn=0;
+        isStart=false;
+    }
 
-    function getWinner () returns(uint res) private {
+    function getWinner () private returns(uint res)  {
         
+        for(uint i=0;i<8;i++){
+            uint[] memory curstate = winnerStates[i];
+            if(gameBoard[curstate[0]]!=0 && gameBoard[curstate[0]]==gameBoard[curstate[1]] && gameBoard[curstate[1]]==gameBoard[curstate[2]])
+                return gameBoard[curstate[0]];
+        }
+        return 0;
     }
     
     function changePlayer () private {
+        
         if(msg.sender==player1){
             playerTurn=2;
         }
@@ -72,6 +84,11 @@ contract Quiz
             playerTurn=1;
         }
     }
+
+    function viewBoardState() public returns(uint[])  {
+        return gameBoard;
+    }
+    
     
 
 }
