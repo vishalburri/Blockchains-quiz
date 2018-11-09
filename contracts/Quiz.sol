@@ -7,7 +7,7 @@ contract Quiz
 
     address player1;
     address player2;
-
+    uint joinFee;
     uint playerTurn;
     uint winner;
     uint numPlayers;
@@ -15,49 +15,72 @@ contract Quiz
     uint[][] winnerStates = [[0,1,2],[3,4,5],[6,7,8],
                           [0,3,6],[1,4,7],[2,5,8],
                           [0,4,8],[2,4,6]];
-    constructor() public
+    bool isPaid;                      
+    event gameEnded(uint winner);                      
+
+    constructor(uint _fee) public 
     {
         owner = msg.sender;
+        joinFee = _fee;
     }
-
-    modifier checkPlayer() { 
-        if((player1==msg.sender && playerTurn==1) || (player2==msg.sender && playerTurn==2)) 
-        _; 
+    
+    modifier checkPlayer(){
+        if ((playerTurn == 1 && msg.sender == player1) || (playerTurn == 2 && msg.sender == player2))
+        _;
         else
             throw;
     }
 
-    function joinGame() public {
+    modifier onlyOwner(){
+        if (msg.sender==owner)
+        _;
+        else
+            throw;
+    }
+    
+
+    function joinGame() public payable {
 
         require (numPlayers<=2,"Exceeded number");
+        require (msg.value >=joinFee);
         
         if(player1==address(0)){
             player1 = msg.sender;
+            numPlayers++;
+            return;
         }
         if(player2==address(0)){
             player2 = msg.sender;
+            numPlayers++;
+            return;
         }
+        
     }
 
-    function startGame()   {
+    function startGame() public onlyOwner{
         require (numPlayers==2);
-        require (owner==msg.sender);
 
         isStart = true;
         playerTurn=1;
     }
 
-    function playGame(uint move) checkPlayer public {
+    function playGame(uint move) public checkPlayer {
         
         require (move >0 && move <=9,"Invalid move");
         require (gameBoard[move-1]==0,"Invalid Move");
-
+        require (isStart==true);
+        
         gameBoard[move-1] = playerTurn;
         winner = getWinner();
-        if(winner > 0){
+        if(winner != 0){
             endGame();
+            emit gameEnded(winner);
+            return;
         }
-        changePlayer();
+        if(playerTurn==1)
+            playerTurn=2;
+        else if(playerTurn==2)
+            playerTurn=1;
     }
     
     function endGame() private {
@@ -75,29 +98,30 @@ contract Quiz
         return 0;
     }
     
-    function changePlayer () private {
-        
-        if(msg.sender==player1){
-            playerTurn=2;
-        }
-        if(msg.sender==player2){
-            playerTurn=1;
-        }
-    }
 
-    function viewBoardState() public returns(uint[])  {
+    function viewBoardState() public view returns(uint[])  {
+        
+        require (msg.sender==player1 || msg.sender==player2);
+
         return gameBoard;
     }
-    
-    
+
+    function sendPayment() public onlyOwner{
+     
+     require (isStart==false);
+     require (isPaid==false);
+     
+      address winnerAddr;
+      if(winner==1)
+        winnerAddr=player1;
+      else if(winner==2)
+        winnerAddr=player2;
+       
+       isPaid=true; 
+       winnerAddr.transfer(2*joinFee);
+       selfdestruct(owner);             
+    }
+
 
 }
 
-
-
-
-
-
-
-
-    
